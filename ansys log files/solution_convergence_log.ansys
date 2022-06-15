@@ -1,0 +1,240 @@
+FINISH  
+/CLEAR,START
+WPSTYLE,,,,,,,,0
+/PLOPTS,FRAME,0 
+/PLOPTS,DATE,0  
+/REPLOT 
+
+
+
+! Skalar parameters 
+*SET,A         , 3            ! radius (mm) 
+*SET,E         , 2.1e5        ! Jung param  
+*SET,NU        , 0.3          ! Puasson param   
+*SET,P         , 40           ! active force
+*SET,H         , A*5     ! other
+*SET,L         , A*10    ! paramters
+*SET,ALPHA     , 1       ! for  
+*SET,BETTA     , 0.8     ! current  
+*SET,i         , 4       ! problem  
+*SET,N1        , 4           ! number   
+*SET,N2        , 20          ! of divisions 
+*SET,N3        , 6           ! for mesh 
+*SET,N4        , 20          ! on   
+*SET,N5        , 2*H/A       ! elements 
+
+
+! Finite element
+/PREP7  
+ET,     1, PLANE183 
+KEYOPT, 1,1,0   
+KEYOPT, 1,3,0   
+KEYOPT, 1,6,0   
+
+! Material properties   
+MPTEMP, ,,,,,,, 
+MPTEMP, 1, 0
+MPDATA, EX,   1,, E 
+MPDATA, PRXY, 1,, NU
+
+
+! Geometry  
+FLST,   2,2,8   
+FITEM,  2,0,0,0 
+FITEM,  2,A,0,0 
+CIRCLE, P51X,,,,90, 
+K, , ,H,,   
+K, ,L,H,,   
+K, ,L, ,,   
+LSTR,    2,    3
+LSTR,    3,    4
+LSTR,    4,    5
+LSTR,    5,    1
+FLST,  2, 5, 4  
+FITEM, 2, 1 
+FITEM, 2, 5 
+FITEM, 2, 4 
+FITEM, 2, 3 
+FITEM, 2, 2 
+AL,P51X 
+
+
+
+
+
+! Start cycle of solutions
+*do,i,1,4
+
+
+
+! Meshing   
+! Number of divisions on elements   
+FLST, 5,1,4,ORDE,1    ! arc 
+FITEM, 5,1  
+CM, _Y,LINE 
+LSEL, ,,,P51X   
+CM, _Y1,LINE
+CMSEL, ,_Y  
+LESIZE, _Y1, , ,N1*i, , , , ,1  
+FLST, 5,1,4,ORDE,1    ! left
+FITEM, 5,5  
+CM, _Y,LINE 
+LSEL, ,,,P51X   
+CM, _Y1,LINE
+CMSEL, ,_Y  
+LESIZE, _Y1, , ,N2*i, , , , ,1  
+FLST, 5,1,4,ORDE,1    ! right   
+FITEM, 5,4  
+CM, _Y,LINE 
+LSEL, ,,,P51X   
+CM, _Y1,LINE
+CMSEL, ,_Y  
+LESIZE, _Y1, , ,N3*i, , , , ,1  
+FLST, 5,1,4,ORDE,1    ! top 
+FITEM, 5,3  
+CM, _Y,LINE 
+LSEL, ,,,P51X   
+CM, _Y1,LINE
+CMSEL, ,_Y  
+LESIZE, _Y1, , ,N4*i, , , , ,1  
+FLST, 5,1,4,ORDE,1    ! bottom  
+FITEM, 5,2  
+CM, _Y,LINE 
+LSEL, ,,,P51X   
+CM, _Y1,LINE
+CMSEL, ,_Y  
+LESIZE, _Y1, , ,N5*i, , , , ,1  
+
+! Quad Free metshing method 
+MSHAPE, 0,2D
+MSHKEY, 0   
+CM, _Y,AREA 
+ASEL, ,,,1  
+CM, _Y1,AREA
+CHKMSH, 'AREA'  
+CMSEL, S,_Y 
+AMESH,  _Y1 
+CMDELE, _Y  
+CMDELE, _Y1 
+CMDELE, _Y2 
+
+
+! boundary conditions   
+FLST,  2,1,4,ORDE,1 
+FITEM, 2,2  
+/GO 
+DL, P51X, ,UX,  
+FLST, 2,1,4,ORDE,1  
+FITEM, 2,5  
+/GO 
+DL, P51X, ,UY,  
+
+
+! Loads 
+
+FLST,  2,1,4,ORDE,1 
+FITEM, 2,3  
+/GO 
+SFL, P51X,PRES,-P*BETTA,    ! vertical  
+
+FLST,  2,1,4,ORDE,1 
+FITEM, 2,4  
+/GO 
+SFL, P51X,PRES,-P*ALPHA,    ! horizontal
+
+SBCTRAN    ! load transfer to finite element model  
+
+
+
+! Solving   
+FINISH  
+/SOL
+ANTYPE, 0   
+SOLVE   
+FINISH  
+/POST1  
+SET, FIRST  
+
+
+! Working area screen   
+/AUTO, 1
+/REP, FAST  
+/SHOW, PNG,,0   
+PNGR, COMP,1,-1 
+PNGR, ORIENT,HORIZ  
+PNGR, COLOR,2   
+PNGR, TMOD,1
+/GFILE, 1600,   
+/CMAP, _TEMPCMAP_,CMP,,SAVE 
+/RGB, INDEX,100,100,100,0   
+/RGB, INDEX,0,0,0,15
+/REPLOT 
+/CMAP, _TEMPCMAP_,CMP   
+/DELETE, _TEMPCMAP_,CMP 
+/SHOW, CLOSE
+/DEVICE, VECTOR,0   
+SAVE, proj,db,
+FINISH  
+
+
+
+
+
+
+! WP change 
+/POST1  
+RSYS, 1 
+
+! Arc path  
+/POST1  
+/REP, FAST   
+GPLOT 
+/POST1  
+/VIEW, 1, WP  
+/REPLOT  
+PATH, Path3,2,30,120,   
+CSWPLA, 11  
+WPOFF, 0,0  
+CSWPLA, 12,1
+CSCIR, 12,1 
+PPATH, 1,0,3,0.1E-05,0  
+PPATH, 2,0,3,-0.1E-05,0 
+PMAP, 'UNI '
+/PBC, PATH,1
+/REPLOT 
+WPCSYS, 1,11
+CSWPLA, 11  
+PDEF, ,S, X,   AVG  
+PDEF, ,S, Y,   AVG  
+PDEF, ,S, XY,  AVG  
+PDEF, ,S, INT, AVG  
+WPSTYLE,,,,,,,,0
+
+PLPAGM, SINT, 10,Blank    ! sig i   
+
+! Working area screen   
+/AUTO, 1
+/REP, FAST  
+/SHOW, PNG,,0   
+PNGR, COMP,1,-1 
+PNGR, ORIENT,HORIZ  
+PNGR, COLOR,2   
+PNGR, TMOD,1
+/GFILE, 1600,   
+/CMAP, _TEMPCMAP_,CMP,,SAVE 
+/RGB, INDEX,100,100,100,0   
+/RGB, INDEX,0,0,0,15
+/REPLOT 
+/CMAP, _TEMPCMAP_,CMP   
+/DELETE, _TEMPCMAP_,CMP 
+/SHOW, CLOSE
+/DEVICE, VECTOR,0   
+SAVE, proj,db,
+FINISH  
+
+
+
+! Mesh delete
+/PREP7
+ACLEAR,       1 
+*enddo 
